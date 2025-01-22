@@ -1,101 +1,165 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useRef, useEffect } from 'react'
+// import Image from "next/image";
+
+import * as THREE from 'three'
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+
+import { Cube } from "@/components/cube";
+import { BLACK_MATERIAL, STICKER_MATERIALS } from "@/components/constants";
+// import { debug_vector } from '../components/utils'
+
+
+export default function ThreeJSScene() {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    if (!canvasRef.current) return
+
+    // Scene setup
+    const scene = new THREE.Scene()
+    scene.background = new THREE.Color(0xc0c0c0)
+
+    // Camera
+    const camera = new THREE.PerspectiveCamera(
+      30, 
+      window.innerWidth / window.innerHeight, 
+      0.1, 
+      1000
+    )
+    camera.position.x = 9;
+    camera.position.y = 9;
+    camera.position.z = 9;
+    camera.lookAt(0, 0, 0);
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ 
+      canvas: canvasRef.current,
+      antialias: true 
+    })
+    renderer.setSize(window.innerWidth, window.innerHeight)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+
+    // Orbit Controls
+    const controls = new OrbitControls(camera, renderer.domElement)
+    controls.enableDamping = true;
+    controls.enablePan = false;
+    controls.enableZoom = false;
+
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
+    scene.add(ambientLight)
+
+    const pointLight = new THREE.PointLight(0xffffff, 1)
+    pointLight.position.set(5, 5, 5)
+    scene.add(pointLight)
+
+    // Cube
+    const size = new THREE.Vector3(3, 3, 3)
+    const cube = new Cube(size);
+    cube.add_to_scene(scene);
+
+    // Debug Axis
+    // debug_vector(new THREE.Vector3(), new THREE.Vector3(size.x, 0, 0), "red", scene);
+    // debug_vector(new THREE.Vector3(), new THREE.Vector3(0, size.y, 0), "green", scene);
+    // debug_vector(new THREE.Vector3(), new THREE.Vector3(0, 0, size.z), "blue", scene);
+
+    // Animation
+    // const clock = new THREE.Clock()
+    const angle_step = Math.PI / 60;
+    let current_state = 0.0
+    const commands: string[] = []
+    let current_command: [string, number] = ["", 0.0];
+
+    function update() {
+      if (current_command[0] == "") {
+        const command = commands.pop()
+        if (command !== undefined) {
+          current_command = [command, Math.PI / 2]
+        }
+      } else {
+        const move = current_command[0]
+        const angle = current_command[1]
+        const diff = angle - current_state;
+        if (diff > angle_step) {
+          cube.rotate3x3(move, angle_step)
+          current_state += angle_step
+        } else if (diff > 0) {
+          cube.rotate3x3(move, diff)
+          current_state += diff
+        } else {
+          current_command = ["", 0]
+          current_state = 0
+        }
+      }
+    }
+
+    // Keyboard
+    function keyDownHandler(e: KeyboardEvent) {
+      if ("RUFLDB".includes(e.key.toUpperCase())) {
+        if (e.shiftKey) {
+          commands.push(e.key.toUpperCase() + "'")
+        } else {
+          commands.push(e.key.toUpperCase())
+        } 
+      }
+    }
+
+    document.addEventListener("keydown", keyDownHandler);
+
+    function animate() {
+      // const elapsedTime = clock.getElapsedTime()
+
+      // Update controls
+      controls.update()
+
+      update()
+
+      // Render
+      renderer.render(scene, camera)
+
+      // Continue animation
+      requestAnimationFrame(animate)
+    }
+
+    // Handle window resize
+    function handleResize() {
+      camera.aspect = window.innerWidth / window.innerHeight
+      camera.updateProjectionMatrix()
+      renderer.setSize(window.innerWidth, window.innerHeight)
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    }
+
+    window.addEventListener('resize', handleResize)
+
+    // Start animation
+    animate()
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      renderer.dispose()
+      controls.dispose()
+      cube.cubies.forEach(cubie => cubie.geometries.forEach(goemetry => goemetry.dispose()))
+      STICKER_MATERIALS.forEach(material => material.dispose())
+      BLACK_MATERIAL.dispose()
+      document.removeEventListener("keydown", keyDownHandler)
+    }
+  }, [])
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+    <div className="w-full h-screen overflow-hidden">
+      <canvas 
+        ref={canvasRef} 
+        className="w-full h-full block"
+      />
+      <div className="absolute top-4 left-4 text-white bg-black/50 p-4 rounded">
+        <h2 className="text-xl font-bold mb-2">Rubik's Cube Simulator</h2>
+        <p>Rotate: Click and Drag</p>
+        <p>Moves: R U F L D B</p>
+        <p>Press Shift for clockwise</p>
+      </div>
     </div>
-  );
+  )
 }
