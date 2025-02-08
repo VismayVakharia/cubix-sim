@@ -5,7 +5,7 @@ import { range } from "./utils";
 export class Cube {
     size: THREE.Vector3
     cubies: Array<Cubie>
-    face_turns: { [id: string]: THREE.Vector3} = {
+    face_turns: { [id: string]: THREE.Vector3 } = {
         "R": new THREE.Vector3(1, 0, 0),
         "U": new THREE.Vector3(0, 1, 0),
         "F": new THREE.Vector3(0, 0, 1),
@@ -13,8 +13,8 @@ export class Cube {
         "D": new THREE.Vector3(0, -1, 0),
         "B": new THREE.Vector3(0, 0, -1)
     }
-    notation_map3x3: { [id: string]: string } = {"M": "NL", "E": "ND", "S": "NF", "X": "CR", "Y": "CU", "Z": "CF"}
-    notation_map2x2: { [id: string]: string } = {"X": "CR", "Y": "CU", "Z": "CF"}
+    notation_map3x3: { [id: string]: string } = { "M": "NL", "E": "ND", "S": "NF", "X": "CR", "Y": "CU", "Z": "CF" }
+    notation_map2x2: { [id: string]: string } = { "X": "CR", "Y": "CU", "Z": "CF" }
 
     constructor(size: THREE.Vector3) {
         this.size = size;
@@ -37,9 +37,9 @@ export class Cube {
             }
         }
     }
-    
+
     add_to_scene(scene: THREE.Scene) {
-        this.cubies.forEach((cubie) => {scene.add(cubie.visual)})
+        this.cubies.forEach((cubie) => { scene.add(cubie.visual) })
     }
 
     rotate_layer(axis: THREE.Vector3, layer_index: number, angle: number) {
@@ -63,13 +63,13 @@ export class Cube {
         let multiplier = -1;
         if (move.slice(move.length - 1) == "'") {
             multiplier = 1;
-            move = move.slice(0, move.length -1)
+            move = move.slice(0, move.length - 1)
         } else if (move.slice(move.length - 1) == "2") {
             multiplier = 2;
-            move = move.slice(0, move.length -1)
+            move = move.slice(0, move.length - 1)
         }
         const axis = this.face_turns[move.slice(move.length - 1)]
-        move = move.slice(0, move.length -1)
+        move = move.slice(0, move.length - 1)
 
         const layers: number[] = []
         if (move.length == 0) {
@@ -77,7 +77,7 @@ export class Cube {
             layers.push(1)
         } else if (move[0] == "C") {
             // cube rotation
-            layers.concat(range(1, Math.abs(this.size.dot(axis)) + 1))
+            layers.push(...range(1, Math.abs(this.size.dot(axis)) + 1))
         } else if (move[0] == "T") {
             // tier rotation
             layers.push(1)

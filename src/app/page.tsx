@@ -10,6 +10,48 @@ import { Cube } from "@/components/cube";
 import { BLACK_MATERIAL, STICKER_MATERIALS } from "@/components/constants";
 // import { debug_vector } from '../components/utils'
 
+import 'keyboard-css'
+
+function Controls() {
+  return (
+    <div className="controls">
+      <h2 className="text-xl font-bold mb-2">Moves</h2>
+      <div className="face">
+        <h3>Face Rotations</h3>
+        <div className="face-buttons">
+          <button className="kbc-button kbc-button-secondary" data-keyboard-key="SHIFT">CCW</button>
+          <button className="kbc-button kbc-button-secondary" data-keyboard-key="2">2</button>
+
+          <button className="kbc-button no-container" data-keyboard-key="F">F</button>
+          <button className="kbc-button no-container" data-keyboard-key="R">R</button>
+          <button className="kbc-button no-container" data-keyboard-key="U">U</button>
+          <button className="kbc-button no-container" data-keyboard-key="L">L</button>
+          <button className="kbc-button no-container" data-keyboard-key="B">B</button>
+          <button className="kbc-button no-container" data-keyboard-key="D">D</button>
+        </div>
+      </div>
+      <div style={{ display: 'inline-flex' }}>
+        <div className="slice" style={{ width: '200px' }}>
+          <h3>Slice Rotations</h3>
+          <div className="slice-buttons">
+            <button className="kbc-button no-container" data-keyboard-key="M">M</button>
+            <button className="kbc-button no-container" data-keyboard-key="E">E</button>
+            <button className="kbc-button no-container" data-keyboard-key="S">S</button>
+          </div>
+        </div>
+        <div className="whole">
+          <h3>Whole cube reorientation</h3>
+          <div className="whole-buttons">
+            <button className="kbc-button no-container" data-keyboard-key="X">X</button>
+            <button className="kbc-button no-container" data-keyboard-key="Y">Y</button>
+            <button className="kbc-button no-container" data-keyboard-key="Z">Z</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 
 export default function ThreeJSScene() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -23,20 +65,20 @@ export default function ThreeJSScene() {
 
     // Camera
     const camera = new THREE.PerspectiveCamera(
-      30, 
-      window.innerWidth / window.innerHeight, 
-      0.1, 
+      30,
+      window.innerWidth / window.innerHeight,
+      0.1,
       1000
     )
-    camera.position.x = 9;
+    camera.position.x = 8;
     camera.position.y = 9;
-    camera.position.z = 9;
+    camera.position.z = 11;
     camera.lookAt(0, 0, 0);
 
     // Renderer
-    const renderer = new THREE.WebGLRenderer({ 
+    const renderer = new THREE.WebGLRenderer({
       canvas: canvasRef.current,
-      antialias: true 
+      antialias: true
     })
     renderer.setSize(window.innerWidth, window.innerHeight)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
@@ -95,18 +137,79 @@ export default function ThreeJSScene() {
       }
     }
 
-    // Keyboard
-    function keyDownHandler(e: KeyboardEvent) {
-      if ("RUFLDB".includes(e.key.toUpperCase())) {
-        if (e.shiftKey) {
-          commands.push(e.key.toUpperCase() + "'")
+    // Keyboard & Mouse
+    let _shiftStatus: boolean = false;
+    let _2Status: boolean = false;
+
+    function downEventHandler(element: Element) {
+      element.classList.add('active');
+      const move = element.getAttribute("data-keyboard-key") as string;
+
+      if ("RUFLDBMESXYZ".includes(move)) {
+        if (_shiftStatus) {
+          commands.push(move + "'")
+        } else if (_2Status) {
+          commands.push(move + "2")
         } else {
-          commands.push(e.key.toUpperCase())
-        } 
+          commands.push(move)
+        }
       }
     }
 
+    function upEventHandler(element: Element) {
+      const key = element.getAttribute("data-keyboard-key") as string;
+      if (key === "SHIFT") {
+        if (_shiftStatus) element.classList.remove('active');
+        _shiftStatus = !_shiftStatus;
+      } else if (key === "2") {
+        if (_2Status) element.classList.remove('active');
+        _2Status = !_2Status;
+      } else {
+        element.classList.remove('active');
+      }
+    }
+
+    function mouseDownHandler(event: MouseEvent) {
+      if (event.button !== 0) return
+      const elements = document.querySelectorAll("[data-keyboard-key]");
+      for (let index = 0; index < elements.length; index++) {
+        const element = elements[index];
+        if (element.contains(event.target as Node)) {
+          downEventHandler(element);
+        };
+      }
+    }
+
+    function mouseUpHandler(event: MouseEvent) {
+      if (event.button !== 0) return
+      const elements = document.querySelectorAll("[data-keyboard-key]");
+      for (let index = 0; index < elements.length; index++) {
+        const element = elements[index];
+        if (element.contains(event.target as Node)) {
+          upEventHandler(element);
+        };
+      }
+    }
+
+    function keyDownHandler(e: KeyboardEvent) {
+      const element = document.querySelector(
+        '[data-keyboard-key="' + e.key.toUpperCase() + '"]'
+      );
+      if (element !== null) downEventHandler(element);
+    }
+
+    function keyUpHandler(e: KeyboardEvent) {
+      const key = e.key;
+      const element = document.querySelector(
+        '[data-keyboard-key="' + key.toUpperCase() + '"]'
+      );
+      if (element !== null) upEventHandler(element);
+    }
+
+    document.addEventListener("mousedown", mouseDownHandler);
+    document.addEventListener("mouseup", mouseUpHandler);
     document.addEventListener("keydown", keyDownHandler);
+    document.addEventListener("keyup", keyUpHandler);
 
     function animate() {
       // const elapsedTime = clock.getElapsedTime()
@@ -144,21 +247,24 @@ export default function ThreeJSScene() {
       cube.cubies.forEach(cubie => cubie.geometries.forEach(goemetry => goemetry.dispose()))
       STICKER_MATERIALS.forEach(material => material.dispose())
       BLACK_MATERIAL.dispose()
+      document.removeEventListener("mousedown", mouseDownHandler)
+      document.removeEventListener("mouseup", mouseUpHandler)
       document.removeEventListener("keydown", keyDownHandler)
+      document.removeEventListener("keyup", keyUpHandler)
     }
   }, [])
 
   return (
     <div className="w-full h-screen overflow-hidden">
-      <canvas 
-        ref={canvasRef} 
+      <canvas
+        ref={canvasRef}
         className="w-full h-full block"
       />
       <div className="absolute top-4 left-4 text-white bg-black/50 p-4 rounded">
         <h2 className="text-xl font-bold mb-2">Rubik's Cube Simulator</h2>
-        <p>Rotate: Click and Drag</p>
-        <p>Moves: R U F L D B</p>
-        <p>Press Shift for clockwise</p>
+      </div>
+      <div className='absolute bottom-4 left-4 text-white bg-black/50 p-4 rounded'>
+        <Controls />
       </div>
     </div>
   )
