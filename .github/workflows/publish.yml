@@ -28,9 +28,18 @@ jobs:
         uses: actions/configure-pages@v4
         with:
           static_site_generator: next
+      
+      - name: Clear Cache
+        run: rm -rf .next cache
 
       - name: Build with Next.js 🏗️
-        run: npx next build
+        run: npx next build -d
+
+      - name: Verify Directory
+        run: ls -la
+
+      - name: Verify Build Directory
+        run: ls -la .next
 
       - name: Upload artifact 📡
         uses: actions/upload-pages-artifact@v3
